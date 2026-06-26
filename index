@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ally Planner Layout Richiesto</title>
+<style>
+body{font-family:Segoe UI,sans-serif;margin:0;background:linear-gradient(135deg,#d8c4ff,#ffd6ec);padding:15px}
+.card{background:#fff;border-radius:16px;padding:15px;margin-bottom:15px}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.day{background:#fafafa;border-radius:8px;min-height:90px;padding:5px}
+.head{text-align:center;font-weight:bold}
+input,select,button{width:100%;padding:8px;margin:4px 0}
+button{background:#ffb7dd;color:#fff;border:none;border-radius:8px}
+.topbar{display:flex;gap:10px;align-items:center}
+</style>
+</head>
+<body>
+
+<div class="card">
+<h2>💜 Ally Finance Planner</h2>
+<div class="topbar">
+<button onclick="changeMonth(-1)">◀</button>
+<div id="title"></div>
+<button onclick="changeMonth(1)">▶</button>
+</div>
+<div id="calendar"></div>
+</div>
+
+<div class="card">
+<h3>Nuovo Movimento</h3>
+<input id="desc" placeholder="Descrizione">
+<input id="amount" type="number" placeholder="Importo">
+<input id="date" type="date">
+<select id="kind">
+<option value="expense">Spesa</option>
+<option value="income">Entrata</option>
+</select>
+<select id="freq">
+<option value="single">Isolata</option>
+<option value="monthly">Fissa Mensile</option>
+<option value="yearly">Fissa Annuale</option>
+</select>
+<button onclick="addItem()">Aggiungi</button>
+</div>
+
+<div class="card">
+<h3>Stipendio</h3>
+<select id="year">
+<option>2026</option><option>2027</option><option>2028</option>
+<option>2029</option><option>2030</option>
+</select>
+<input id="salary" type="number" placeholder="Stipendio mensile">
+<button onclick="saveSalary()">Salva stipendio</button>
+</div>
+
+<script>
+let items=JSON.parse(localStorage.getItem('ally_items')||'[]');
+let current=new Date();
+
+function saveSalary(){
+ localStorage.setItem('salary',salary.value||0);
+ alert('Stipendio salvato');
+}
+
+function addItem(){
+ items.push({
+  desc:desc.value, amount:+amount.value,
+  date:date.value, kind:kind.value, freq:freq.value
+ });
+ localStorage.setItem('ally_items',JSON.stringify(items));
+ render();
+}
+
+function occurs(it,y,m){
+ let d=new Date(it.date);
+ if(it.freq==='single') return d.getFullYear()==y && d.getMonth()==m;
+ if(it.freq==='monthly') return y*12+m>=d.getFullYear()*12+d.getMonth();
+ if(it.freq==='yearly') return m===d.getMonth() && y>=d.getFullYear();
+}
+
+function render(){
+ let y=current.getFullYear(),m=current.getMonth();
+ title.textContent=current.toLocaleDateString('it-IT',{month:'long',year:'numeric'});
+ let cal=document.getElementById('calendar');
+ cal.className='calendar';
+ cal.innerHTML='';
+ ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].forEach(x=>cal.innerHTML+=`<div class="head">${x}</div>`);
+ let first=(new Date(y,m,1).getDay()+6)%7;
+ let days=new Date(y,m+1,0).getDate();
+ for(let i=0;i<first;i++) cal.innerHTML+='<div></div>';
+ for(let d=1;d<=days;d++){
+   let box=`<div class="day"><b>${d}</b>`;
+   items.forEach(it=>{
+      if(occurs(it,y,m)){
+         let od=new Date(it.date);
+         if(od.getDate()==d) box+=`<div>${it.kind==='income'?'💰':'💸'} ${it.desc}</div>`;
+      }
+   });
+   box+='</div>';
+   cal.innerHTML+=box;
+ }
+}
+function changeMonth(v){current.setMonth(current.getMonth()+v);render();}
+render();
+</script>
+</body>
+</html>
