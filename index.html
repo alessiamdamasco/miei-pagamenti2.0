@@ -15,6 +15,8 @@
         .topbar { display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 10px; }
         .summary-box { background: #fdf0f6; padding: 10px; border-radius: 12px; margin-bottom: 15px; }
         .stats { display: flex; justify-content: space-between; font-size: 0.9em; margin-top: 10px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+        .del-btn { color: red; cursor: pointer; font-weight: bold; padding: 0 4px; }
     </style>
 </head>
 <body>
@@ -38,7 +40,7 @@
 </div>
 
 <div class="card">
-    <h3>Impostazioni & Movimenti</h3>
+    <h3>Gestione Movimenti</h3>
     <input id="salary" type="number" placeholder="Stipendio mensile (€)">
     <button onclick="saveSalary()">Aggiorna Stipendio</button>
     <hr>
@@ -76,7 +78,14 @@
         const kind = document.getElementById('kind').value;
         const freq = document.getElementById('freq').value;
         if(!desc || !amount || !date) return alert("Inserisci i dati!");
-        items.push({ desc, amount, date, kind, freq });
+        // Aggiungiamo un ID univoco basato sul tempo per poterlo cancellare
+        items.push({ id: Date.now(), desc, amount, date, kind, freq });
+        localStorage.setItem('ally_items', JSON.stringify(items));
+        render();
+    }
+
+    function deleteItem(id) {
+        items = items.filter(it => it.id !== id);
         localStorage.setItem('ally_items', JSON.stringify(items));
         render();
     }
@@ -107,14 +116,12 @@
 
         items.forEach(it => {
             let dIt = new Date(it.date);
-            // Calcolo mese corrente
             if((it.freq === 'single' && dIt.getFullYear() === y && dIt.getMonth() === m) || 
                (it.freq === 'monthly' && (y > dIt.getFullYear() || (y === dIt.getFullYear() && m >= dIt.getMonth()))) ||
                (it.freq === 'yearly' && m === dIt.getMonth() && y >= dIt.getFullYear())) {
                 if(it.kind === 'expense') mExpense += it.amount;
                 else totalIncome += it.amount;
             }
-            // Calcolo stima annuale (semplificata)
             if(it.kind === 'expense') {
                 if(it.freq === 'single') yExpense += it.amount;
                 else if(it.freq === 'monthly') yExpense += (it.amount * 12);
@@ -132,9 +139,17 @@
         let first = (new Date(y, m, 1).getDay() + 6) % 7;
         let days = new Date(y, m + 1, 0).getDate();
         for(let i = 0; i < first; i++) cal.innerHTML += '<div></div>';
+        
         for(let d = 1; d <= days; d++) {
             let box = `<div class="day"><b>${d}</b>`;
-            items.forEach(it => { if(isVisible(it, y, m, d)) box += `<div>${it.kind === 'income' ? '💰' : '💸'} ${it.desc}</div>`; });
+            items.forEach(it => { 
+                if(isVisible(it, y, m, d)) {
+                    box += `<div class="item-row">
+                                <span>${it.kind === 'income' ? '💰' : '💸'} ${it.desc}</span>
+                                <span class="del-btn" onclick="deleteItem(${it.id})">❌</span>
+                            </div>`;
+                }
+            });
             cal.innerHTML += box + '</div>';
         }
     }
